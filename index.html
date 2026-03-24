@@ -25,8 +25,16 @@ window.fbSignOut=async function(){await signOut(_fbAuth);};
 
 window.fbSaveProgress=async function(){
   const u=_fbAuth.currentUser;if(!u)return;
-  try{await setDoc(doc(_fbDb,"users",u.uid),{js_done:JSON.parse(localStorage.getItem('js_done')||'[]'),css_done:JSON.parse(localStorage.getItem('css_done')||'[]'),updatedAt:Date.now()});}
-  catch(e){console.warn('Сохранение:',e);}
+  try{
+    await setDoc(doc(_fbDb,"users",u.uid),{
+      js_done:    JSON.parse(localStorage.getItem('js_done')||'[]'),
+      css_done:   JSON.parse(localStorage.getItem('css_done')||'[]'),
+      course_done:JSON.parse(localStorage.getItem('course_done')||'[]'),
+      mg_bm:      JSON.parse(localStorage.getItem('mg_bm')||'[]'),
+      mg_pr:      JSON.parse(localStorage.getItem('mg_pr')||'{}'),
+      updatedAt:  Date.now()
+    });
+  }catch(e){console.warn('Сохранение:',e);}
 };
 
 async function _fbLoadProgress(uid){
@@ -34,11 +42,20 @@ async function _fbLoadProgress(uid){
     const snap=await getDoc(doc(_fbDb,"users",uid));
     if(!snap.exists())return;
     const d=snap.data();
+    // Курсы
     if(d.js_done){localStorage.setItem('js_done',JSON.stringify(d.js_done));if(window.jsDoneList!==undefined)window.jsDoneList=d.js_done;}
     if(d.css_done){localStorage.setItem('css_done',JSON.stringify(d.css_done));if(window.cssDoneList!==undefined)window.cssDoneList=d.css_done;}
+    if(d.course_done){localStorage.setItem('course_done',JSON.stringify(d.course_done));if(window.lessonDoneList!==undefined)window.lessonDoneList=d.course_done;}
+    // Закладки
+    if(d.mg_bm){localStorage.setItem('mg_bm',JSON.stringify(d.mg_bm));if(window.bookmarks!==undefined)window.bookmarks=d.mg_bm;}
+    // Прогресс шпаргалок
+    if(d.mg_pr){localStorage.setItem('mg_pr',JSON.stringify(d.mg_pr));if(window.progress!==undefined)window.progress=d.mg_pr;}
+    // Обновить UI
     if(typeof jsUpdateProgress==='function')jsUpdateProgress();
     if(typeof cssUpdateProgress==='function')cssUpdateProgress();
+    if(typeof updateCourseProgress==='function')updateCourseProgress();
     if(typeof updateCoursePickerProgress==='function')updateCoursePickerProgress();
+    if(typeof buildSB==='function')buildSB(window.curCat||'all');
   }catch(e){console.warn('Загрузка:',e);}
 }
 
@@ -1007,8 +1024,8 @@ let cur=null,curCat='all',curCourse=null;
 /* ════ PERSISTENT STATE ════ */
 var bookmarks=JSON.parse(localStorage.getItem('mg_bm')||'[]');
 var progress=JSON.parse(localStorage.getItem('mg_pr')||'{}');
-function saveBookmarks(){localStorage.setItem('mg_bm',JSON.stringify(bookmarks))}
-function saveProgress(){localStorage.setItem('mg_pr',JSON.stringify(progress))}
+function saveBookmarks(){localStorage.setItem('mg_bm',JSON.stringify(bookmarks));if(typeof window._fbAutoSave==='function')window._fbAutoSave();}
+function saveProgress(){localStorage.setItem('mg_pr',JSON.stringify(progress));if(typeof window._fbAutoSave==='function')window._fbAutoSave();}
 
 /* ════ THEME ════ */
 (function(){if(localStorage.getItem('mg_theme')==='light')document.body.classList.add('light');})();
@@ -1812,7 +1829,7 @@ function lessonDone(){
   if(!curLesson)return;
   var idx=lessonDoneList.indexOf(curLesson);
   if(idx>=0)lessonDoneList.splice(idx,1);else lessonDoneList.push(curLesson);
-  localStorage.setItem('course_done',JSON.stringify(lessonDoneList));
+  localStorage.setItem('course_done',JSON.stringify(lessonDoneList));if(typeof window._fbAutoSave==='function')window._fbAutoSave();
   updateCourseProgress();
   var doneBtn=document.getElementById('CL-DONE');
   if(doneBtn){
