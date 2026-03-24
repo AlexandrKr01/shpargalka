@@ -1,0 +1,27 @@
+{
+  "name": "МегаШпаргалка — Разработчик",
+  "short_name": "Шпаргалка",
+  "description": "Интерактивный справочник разработчика: HTML, CSS, JavaScript и многое другое",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f0f17",
+  "theme_color": "#0f0f17",
+  "lang": "ru",
+  "categories": ["education", "developer"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
