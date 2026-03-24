@@ -10,6 +10,57 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getAuth,signInWithPopup,signOut,GoogleAuthProvider,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+const _fbCfg={apiKey:"AIzaSyCaR5IPNDISXXWL52YT95HDljgrcYMEhEk",authDomain:"spargalka-9f6e4.firebaseapp.com",projectId:"spargalka-9f6e4",storageBucket:"spargalka-9f6e4.firebasestorage.app",messagingSenderId:"894001296974",appId:"1:894001296974:web:b6a25370b328a4a798f51f"};
+const _fbApp=initializeApp(_fbCfg);
+const _fbAuth=getAuth(_fbApp);
+const _fbDb=getFirestore(_fbApp);
+const _fbProvider=new GoogleAuthProvider();
+
+window.fbSignIn=async function(){try{await signInWithPopup(_fbAuth,_fbProvider);}catch(e){console.warn('Вход отменён',e);}};
+window.fbSignOut=async function(){await signOut(_fbAuth);};
+
+window.fbSaveProgress=async function(){
+  const u=_fbAuth.currentUser;if(!u)return;
+  try{await setDoc(doc(_fbDb,"users",u.uid),{js_done:JSON.parse(localStorage.getItem('js_done')||'[]'),css_done:JSON.parse(localStorage.getItem('css_done')||'[]'),updatedAt:Date.now()});}
+  catch(e){console.warn('Сохранение:',e);}
+};
+
+async function _fbLoadProgress(uid){
+  try{
+    const snap=await getDoc(doc(_fbDb,"users",uid));
+    if(!snap.exists())return;
+    const d=snap.data();
+    if(d.js_done){localStorage.setItem('js_done',JSON.stringify(d.js_done));if(window.jsDoneList!==undefined)window.jsDoneList=d.js_done;}
+    if(d.css_done){localStorage.setItem('css_done',JSON.stringify(d.css_done));if(window.cssDoneList!==undefined)window.cssDoneList=d.css_done;}
+    if(typeof jsUpdateProgress==='function')jsUpdateProgress();
+    if(typeof cssUpdateProgress==='function')cssUpdateProgress();
+    if(typeof updateCoursePickerProgress==='function')updateCoursePickerProgress();
+  }catch(e){console.warn('Загрузка:',e);}
+}
+
+onAuthStateChanged(_fbAuth,async(user)=>{
+  const btn=document.getElementById('AUTH-BTN');
+  const ava=document.getElementById('AUTH-AVATAR');
+  const nm=document.getElementById('AUTH-NAME');
+  if(!btn)return;
+  if(user){
+    btn.textContent='Выйти';btn.onclick=window.fbSignOut;
+    if(ava){ava.src=user.photoURL||'';ava.style.display='inline-block';}
+    if(nm)nm.textContent=user.displayName||user.email||'';
+    await _fbLoadProgress(user.uid);
+    window._fbAutoSave=function(){clearTimeout(window._fbSaveTimer);window._fbSaveTimer=setTimeout(window.fbSaveProgress,1500);};
+  }else{
+    btn.textContent='🔑 Войти';btn.onclick=window.fbSignIn;
+    if(ava)ava.style.display='none';
+    if(nm)nm.textContent='';
+    window._fbAutoSave=null;
+  }
+});
+</script>
 <style>
 :root{
   --app:#0f0f17;--sb-bg:#13131e;--sb-bd:#1e1e30;
@@ -881,6 +932,11 @@ body.light .cp-prog-bar{background:rgba(0,0,0,.08)}
   <div class="srch-w">
     <span class="si">⌕</span>
     <input class="srch" type="text" placeholder="Поиск..." id="SI" autocomplete="off">
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0;">
+    <img id="AUTH-AVATAR" src="" alt="" style="display:none;width:24px;height:24px;border-radius:50%;border:1px solid #3a3a58;">
+    <span id="AUTH-NAME" style="font-size:11px;color:#8080b0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    <button id="AUTH-BTN" onclick="window.fbSignIn()" style="padding:3px 10px;border-radius:14px;border:1px solid #3a3a58;background:#1a1a2e;color:#c0c0e0;font-size:11px;font-family:var(--ff-ui);font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;">🔑 Войти</button>
   </div>
 </div>
 <div class="cat-tabs-bar" id="CAT-TABS"><div class="tabs" id="TABS">
@@ -1919,7 +1975,7 @@ function cssDone(){
   if(!curCssLesson)return;
   var idx=cssDoneList.indexOf(curCssLesson);
   if(idx>=0)cssDoneList.splice(idx,1);else cssDoneList.push(curCssLesson);
-  localStorage.setItem('css_done',JSON.stringify(cssDoneList));
+  localStorage.setItem('css_done',JSON.stringify(cssDoneList));if(typeof window._fbAutoSave==='function')window._fbAutoSave();
   cssUpdateProgress();
   updateCoursePickerProgress();
   var done=document.getElementById('CSS-CL-DONE');
@@ -1974,7 +2030,7 @@ function jsDone(){
   if(!curJsLesson)return;
   var idx=jsDoneList.indexOf(curJsLesson);
   if(idx>=0)jsDoneList.splice(idx,1);else jsDoneList.push(curJsLesson);
-  localStorage.setItem('js_done',JSON.stringify(jsDoneList));
+  localStorage.setItem('js_done',JSON.stringify(jsDoneList));if(typeof window._fbAutoSave==='function')window._fbAutoSave();
   jsUpdateProgress();
   updateCoursePickerProgress();
   var done=document.getElementById('JS-CL-DONE');
@@ -2012,11 +2068,11 @@ buildSB('all');
 buildWel();
 </script>
 <script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
     navigator.serviceWorker.register('/shpargalka/sw.js')
-      .then(function(reg) { console.log('SW:', reg.scope); })
-      .catch(function(err) { console.log('SW error:', err); });
+      .then(function(r){console.log('SW:',r.scope);})
+      .catch(function(e){console.log('SW error:',e);});
   });
 }
 </script>
