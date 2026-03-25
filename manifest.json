@@ -4,7 +4,7 @@
   "description": "Интерактивный справочник разработчика: HTML, CSS, JavaScript и многое другое",
   "start_url": "/shpargalka/",
   "scope": "/shpargalka/",
-  "display": "fullscreen",
+  "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f0f17",
   "theme_color": "#0f0f17",
