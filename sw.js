@@ -1,4 +1,4 @@
-const CACHE_NAME = 'megashpargalka-v1.3.5';
+const CACHE_NAME = 'megashpargalka-v1.4.0';
 
 const PRECACHE_URLS = [
   '/shpargalka/',
